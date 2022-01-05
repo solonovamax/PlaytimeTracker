@@ -15,6 +15,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import us.spaceclouds42.playtime_tracker.advancement.PlaytimeCriterion;
 import us.spaceclouds42.playtime_tracker.duck.AFKPlayer;
 
+import java.time.Duration;
+
 
 @Mixin(ServerPlayNetworkHandler.class)
 abstract class ServerPlayNetworkHandlerMixin_TimeTracker {
@@ -25,18 +27,23 @@ abstract class ServerPlayNetworkHandlerMixin_TimeTracker {
     private long lastTickTime = Util.getMeasuringTimeMs();
     
     @Unique
-    private final long afkTime = 60000L * 5L;
+    private final long afkTime = Duration.ofMinutes(5).toMillis();
     
     @Inject(method = "tick", at = @At("TAIL"))
     private void trackTime(CallbackInfo ci) {
+//        Common.LOGGER.info("afk time: {}", afkTime);
         AFKPlayer afkPlayer = (AFKPlayer) this.player;
         long nowTickTime = Util.getMeasuringTimeMs();
         
         if (!afkPlayer.isAfk()) {
-            if (afkPlayer.getStrictLastActionTime() > 0L && nowTickTime - afkPlayer.getStrictLastActionTime() > this.afkTime) {
+            long lastActionTime = afkPlayer.getStrictLastActionTime();
+            
+            if (lastActionTime > 0L && nowTickTime - lastActionTime > this.afkTime) {
                 afkPlayer.setAfk(true);
+                
                 afkPlayer.setPlaytime(afkPlayer.getPlaytime() - this.afkTime); // removes last 5 afk minutes of playtime
                 afkPlayer.setTempPlaytime(afkPlayer.getTempPlaytime() - this.afkTime);
+                
                 this.player.server.getPlayerManager().sendToAll(
                         new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME, this.player));
             } else {
@@ -52,7 +59,7 @@ abstract class ServerPlayNetworkHandlerMixin_TimeTracker {
     
     @Inject(method = "onPlayerMove", at = @At("HEAD"))
     private void updateLastActionTime(PlayerMoveC2SPacket packet, CallbackInfo ci) {
-        if (packet instanceof PlayerMoveC2SPacket.LookAndOnGround) {
+        if (packet.changesLook()) {
             ((AFKPlayer) this.player).setStrictLastActionTime(Util.getMeasuringTimeMs());
             if (((AFKPlayer) this.player).isAfk()) {
                 ((AFKPlayer) this.player).setAfk(false);
