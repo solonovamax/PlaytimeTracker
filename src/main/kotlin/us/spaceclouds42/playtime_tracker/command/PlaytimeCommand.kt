@@ -559,12 +559,13 @@ class PlaytimeCommand {
         }
         
         times.toList().sortedBy { (_, value) -> value }.asReversed().forEachIndexed { index, entry ->
-            if (index % 2 == 0)
-                source.sendFeedback(LiteralText("§a$index. §b${entry.first}: ${entry.second!!.prettyPrint()}"), false)
+            val n = index + 1
+            if (n % 2 == 0)
+                source.sendFeedback(LiteralText("§a$n. §b${entry.first}: ${entry.second!!.prettyPrint()}"), false)
             else
-                source.sendFeedback(LiteralText("§2$index. §3${entry.first}: ${entry.second!!.prettyPrint()}"), false)
+                source.sendFeedback(LiteralText("§2$n. §3${entry.first}: ${entry.second!!.prettyPrint()}"), false)
             
-            if (index == count)
+            if (n == count)
                 return
             
         }

@@ -6,16 +6,19 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.advancement.criterion.Criteria
 import net.minecraft.server.MinecraftServer
 import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 import us.spaceclouds42.playtime_tracker.advancement.PlaytimeCriterion
 import us.spaceclouds42.playtime_tracker.command.PlaytimeCommand
 
 object Common : ModInitializer {
     lateinit var PLAYTIME: PlaytimeCriterion
     lateinit var SERVER: MinecraftServer
-    private val logger = LogManager.getLogger()
+    
+    @JvmField
+    val LOGGER: Logger = LogManager.getLogger()
     
     override fun onInitialize() {
-        logger.info("[Playtime Tracker] Tracking playtime!")
+        LOGGER.info("[Playtime Tracker] Tracking playtime!")
         
         CommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             dispatcher.root.addChild(PlaytimeCommand().register())

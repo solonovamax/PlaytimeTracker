@@ -38,15 +38,10 @@ abstract class ServerPlayNetworkHandlerMixin_TimeTracker {
                 afkPlayer.setPlaytime(afkPlayer.getPlaytime() - this.afkTime); // removes last 5 afk minutes of playtime
                 afkPlayer.setTempPlaytime(afkPlayer.getTempPlaytime() - this.afkTime);
                 this.player.server.getPlayerManager().sendToAll(
-                        new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME, this.player)
-                                                               );
+                        new PlayerListS2CPacket(PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME, this.player));
             } else {
-                afkPlayer.setPlaytime(
-                        afkPlayer.getPlaytime() + (nowTickTime - this.lastTickTime)
-                                     );
-                afkPlayer.setTempPlaytime(
-                        afkPlayer.getTempPlaytime() + (nowTickTime - this.lastTickTime)
-                                         );
+                afkPlayer.setPlaytime(afkPlayer.getPlaytime() + (nowTickTime - this.lastTickTime));
+                afkPlayer.setTempPlaytime(afkPlayer.getTempPlaytime() + (nowTickTime - this.lastTickTime));
                 
                 PlaytimeCriterion.trigger(this.player);
             }
