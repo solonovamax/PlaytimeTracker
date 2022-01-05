@@ -21,9 +21,6 @@ import us.spaceclouds42.playtime_tracker.duck.AFKPlayer;
 
 @Mixin(PlayerListS2CPacket.class)
 abstract class PlayerListS2CPacketMixin {
-    private static final Logger logger = LogManager.getLogger();
-    
-    
     @Mixin(PlayerListS2CPacket.Entry.class)
     private abstract static class EntryMixin {
         @Shadow
