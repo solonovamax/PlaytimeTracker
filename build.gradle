@@ -52,8 +52,8 @@ dependencies {
     include "com.github.P03W:Aegis:${project.aegis_version}"
 
     // Ne v seti
-    modImplementation "com.github.BasiqueEvangelist:ne-v-seti:${project.ne_v_seti_version}"
-    include "com.github.BasiqueEvangelist:ne-v-seti:${project.ne_v_seti_version}"
+    modImplementation "com.github.solonovamax:ne-v-seti:${project.ne_v_seti_version}"
+    include "com.github.solonovamax:ne-v-seti:${project.ne_v_seti_version}"
 
     // Ekho
     modImplementation "com.github.SpaceClouds42:Ekho:${project.ekho_version}"
