@@ -6,6 +6,8 @@ import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -18,6 +20,9 @@ import us.spaceclouds42.playtime_tracker.duck.AFKPlayer;
 
 @Mixin(PlayerListS2CPacket.class)
 abstract class PlayerListS2CPacketMixin_AFKDisplay {
+    private static final Logger logger = LogManager.getLogger();
+    
+    
     @Mixin(PlayerListS2CPacket.Entry.class)
     private abstract static class EntryMixin {
         @Shadow
@@ -32,7 +37,7 @@ abstract class PlayerListS2CPacketMixin_AFKDisplay {
         private void modifyDisplayName(CallbackInfoReturnable<Text> cir) {
             ServerPlayerEntity player = Common.SERVER.getPlayerManager().getPlayer(this.profile.getId());
             if (player != null && ((AFKPlayer) player).isAfk()) {
-                System.out.println(player.getEntityName() + " is afk!");
+                logger.info("Player {} is afk!", player.getEntityName());
                 cir.setReturnValue(player.getDisplayName().copy().formatted(Formatting.GRAY));
             }
         }
