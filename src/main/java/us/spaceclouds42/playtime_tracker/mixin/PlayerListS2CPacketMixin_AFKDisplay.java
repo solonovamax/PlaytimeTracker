@@ -4,6 +4,7 @@ package us.spaceclouds42.playtime_tracker.mixin;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.apache.logging.log4j.LogManager;
@@ -38,7 +39,7 @@ abstract class PlayerListS2CPacketMixin_AFKDisplay {
             ServerPlayerEntity player = Common.SERVER.getPlayerManager().getPlayer(this.profile.getId());
             if (player != null && ((AFKPlayer) player).isAfk()) {
                 Common.LOGGER.info("Player {} is afk!", player.getEntityName());
-                cir.setReturnValue(player.getDisplayName().copy().formatted(Formatting.GRAY));
+                cir.setReturnValue(new LiteralText("[AFK] ").append(player.getDisplayName()).formatted(Formatting.GRAY));
             }
         }
     }

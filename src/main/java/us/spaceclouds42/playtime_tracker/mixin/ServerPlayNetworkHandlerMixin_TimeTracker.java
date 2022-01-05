@@ -31,7 +31,6 @@ abstract class ServerPlayNetworkHandlerMixin_TimeTracker {
     
     @Inject(method = "tick", at = @At("TAIL"))
     private void trackTime(CallbackInfo ci) {
-//        Common.LOGGER.info("afk time: {}", afkTime);
         AFKPlayer afkPlayer = (AFKPlayer) this.player;
         long nowTickTime = Util.getMeasuringTimeMs();
         
