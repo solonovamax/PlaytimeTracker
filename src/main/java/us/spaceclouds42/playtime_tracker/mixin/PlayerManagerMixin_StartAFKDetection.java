@@ -1,5 +1,6 @@
 package us.spaceclouds42.playtime_tracker.mixin;
 
+
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -10,14 +11,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import us.spaceclouds42.playtime_tracker.duck.AFKPlayer;
 
+
 @Mixin(PlayerManager.class)
 abstract class PlayerManagerMixin_StartAFKDetection {
-    @Inject(
-            method = "onPlayerConnect",
-            at = @At(
-                    value = "TAIL"
-            )
-    )
+    @Inject(method = "onPlayerConnect", at = @At("TAIL"))
     private void updateLastActionTime(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
         ((AFKPlayer) player).setStrictLastActionTime(Util.getMeasuringTimeMs());
     }

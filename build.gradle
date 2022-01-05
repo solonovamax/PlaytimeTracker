@@ -14,13 +14,13 @@ group = project.maven_group
 
 loom {
     runs {
-         guiServer {
-             server()
-             ideConfigGenerated project.rootProject == project
-             name = "Gui Server"
-             source sourceSets.main
-             serverWithGui()
-         }
+        guiServer {
+            server()
+            ideConfigGenerated project.rootProject == project
+            name = "Gui Server"
+            source sourceSets.main
+            serverWithGui()
+        }
     }
 }
 
@@ -66,14 +66,14 @@ dependencies {
 processResources {
     inputs.property "version", project.version
 
-    from(sourceSets.main.resources.srcDirs) {
-        include "fabric.mod.json"
-        expand "version": project.version
-    }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "fabric.mod.json"
-    }
+//    from(sourceSets.main.resources.srcDirs) {
+//        include "fabric.mod.json"
+//        expand "version": project.version
+//    }
+//
+//    from(sourceSets.main.resources.srcDirs) {
+//        exclude "fabric.mod.json"
+//    }
 }
 
 // ensure that the encoding is set to UTF-8, no matter what the system default is
