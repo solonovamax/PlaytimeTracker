@@ -13,7 +13,7 @@ import us.spaceclouds42.playtime_tracker.duck.AFKPlayer;
 
 
 @Mixin(PlayerManager.class)
-abstract class PlayerManagerMixin_StartAFKDetection {
+abstract class PlayerManagerMixin {
     @Inject(method = "onPlayerConnect", at = @At("TAIL"))
     private void updateLastActionTime(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
         ((AFKPlayer) player).setStrictLastActionTime(Util.getMeasuringTimeMs());

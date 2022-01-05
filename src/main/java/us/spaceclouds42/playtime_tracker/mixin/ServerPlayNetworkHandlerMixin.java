@@ -19,7 +19,7 @@ import java.time.Duration;
 
 
 @Mixin(ServerPlayNetworkHandler.class)
-abstract class ServerPlayNetworkHandlerMixin_TimeTracker {
+abstract class ServerPlayNetworkHandlerMixin {
     @Shadow
     public ServerPlayerEntity player;
     

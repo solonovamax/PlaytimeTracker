@@ -13,18 +13,18 @@ import us.spaceclouds42.playtime_tracker.duck.AFKPlayer;
 
 
 @Mixin(ServerPlayerEntity.class)
-abstract class ServerPlayerEntityMixin_DataStorage implements AFKPlayer {
+abstract class ServerPlayerEntityMixin implements AFKPlayer {
     @Unique
-    private boolean isAfk;
+    private boolean isAfk = false;
     
     @Unique
-    private long playtime;
+    private long playtime = 0L;
     
     @Unique
-    private long tempPlaytime;
+    private long tempPlaytime = 0L;
     
     @Unique
-    private long strictLastActionTime;
+    private long strictLastActionTime = 0L;
     
     @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
     private void saveData(NbtCompound tag, CallbackInfo ci) {
