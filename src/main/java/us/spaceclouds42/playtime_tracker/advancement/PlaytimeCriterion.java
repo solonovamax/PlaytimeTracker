@@ -11,35 +11,35 @@ import net.minecraft.util.Identifier;
 import us.spaceclouds42.playtime_tracker.duck.AFKPlayer;
 import us.spaceclouds42.playtime_tracker.util.AdvancementHelper;
 
+import java.time.Duration;
+
 
 public class PlaytimeCriterion extends AbstractCriterion<PlaytimeCriterion.Conditions> {
     private static final Identifier ID = new Identifier("playtime_tracker:playtime");
     
-    private static final long hour = 60000L * 60L;
+    private static final long DEDICATED_TIME_REQUIREMENT = Duration.ofHours(10).toMillis();
     
-    private static final long dedicatedTime = hour * 10;
+    private static final long TIME_MARCHES_TIME_REQUIREMENT = Duration.ofHours(25).toMillis();
     
-    private static final long timeMarchesTime = hour * 25;
+    private static final long ANCIENT_ONE_TIME_REQUIREMENT = Duration.ofHours(100).toMillis();
     
-    private static final long ANCIENT_ONE_TIME_MS = hour * 100;
-    
-    private static final long endOfTime = hour * 1000;
+    private static final long END_OF_TIME_REQUIREMENT = Duration.ofHours(1000).toMillis();
     
     public static void trigger(ServerPlayerEntity player) {
         AFKPlayer afkPlayer = (AFKPlayer) player;
-        if (afkPlayer.getPlaytime() >= endOfTime) {
+        if (afkPlayer.getPlaytime() >= END_OF_TIME_REQUIREMENT) {
             AdvancementHelper.INSTANCE.grant(player, "playtime_tracker:end_of_time");
         }
         
-        if (afkPlayer.getPlaytime() >= ANCIENT_ONE_TIME_MS) {
+        if (afkPlayer.getPlaytime() >= ANCIENT_ONE_TIME_REQUIREMENT) {
             AdvancementHelper.INSTANCE.grant(player, "playtime_tracker:ancient_one");
         }
         
-        if (afkPlayer.getPlaytime() >= timeMarchesTime) {
+        if (afkPlayer.getPlaytime() >= TIME_MARCHES_TIME_REQUIREMENT) {
             AdvancementHelper.INSTANCE.grant(player, "playtime_tracker:time_marches");
         }
         
-        if (afkPlayer.getPlaytime() >= dedicatedTime) {
+        if (afkPlayer.getPlaytime() >= DEDICATED_TIME_REQUIREMENT) {
             AdvancementHelper.INSTANCE.grant(player, "playtime_tracker:dedicated");
         }
     }
