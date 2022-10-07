@@ -9,24 +9,24 @@ const val d = h * 24
 const val w = d * 7
 
 val UNITS = mapOf(
-    "w" to w,
-    "d" to d,
-    "h" to h,
-    "m" to m,
-    "s" to s,
-)
+        "w" to w,
+        "d" to d,
+        "h" to h,
+        "m" to m,
+        "s" to s,
+                 )
 
 fun String.toTime(): Long {
     val reader = StringReader(this)
-
+    
     var totalTime: Long = 0
-
+    
     while (reader.canRead()) {
         reader.skipWhitespace()
         val time: Long = reader.readLong()
         val unit: String = reader.readUnquotedString()
         totalTime += time * (UNITS[unit] ?: 0)
     }
-
+    
     return totalTime
 }

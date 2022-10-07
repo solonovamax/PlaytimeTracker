@@ -14,8 +14,6 @@ object AfkCriterion : AbstractCriterion<Conditions>() {
     
     val ID = Identifier("playtime_tracker:afk")
     
-    val AFK_ID = Identifier("playtime_tracker:afk")
-    
     @JvmStatic
     fun trigger(player: ServerPlayerEntity) {
         AfkCriterion.trigger(player) {

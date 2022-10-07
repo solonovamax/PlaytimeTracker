@@ -6,8 +6,7 @@ import net.kyori.adventure.platform.fabric.FabricServerAudiences
 import net.minecraft.server.command.ServerCommandSource
 
 data class ServerCommand(val source: ServerCommandSource) : ForwardingAudience.Single {
-    val audience: Audience
-        get() = FabricServerAudiences.of(this.source.server).audience(this.source)
+    private val audience: Audience by lazy { FabricServerAudiences.of(this.source.server).audience(this.source) }
     
     override fun audience(): Audience = audience
 }

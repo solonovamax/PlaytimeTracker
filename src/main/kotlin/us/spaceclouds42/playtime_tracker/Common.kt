@@ -10,11 +10,11 @@ import cloud.commandframework.minecraft.extras.MinecraftExceptionHandler
 import cloud.commandframework.minecraft.extras.MinecraftHelp
 import io.leangen.geantyref.TypeToken
 import net.fabricmc.api.ModInitializer
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.advancement.criterion.Criteria
 import net.minecraft.server.MinecraftServer
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import org.quiltmc.qsl.lifecycle.api.event.ServerLifecycleEvents
 import us.spaceclouds42.playtime_tracker.advancement.AfkCriterion
 import us.spaceclouds42.playtime_tracker.advancement.PlaytimeCriterion
 import us.spaceclouds42.playtime_tracker.command.DurationParser
@@ -30,8 +30,8 @@ object Common : ModInitializer {
     
     override fun onInitialize() {
         LOGGER.info("[Playtime Tracker] Tracking playtime!")
-        
-        ServerLifecycleEvents.SERVER_STARTED.register { SERVER = it }
+    
+        ServerLifecycleEvents.STARTING.register { SERVER = it }
         
         Criteria.register(PlaytimeCriterion)
         Criteria.register(AfkCriterion)
@@ -41,8 +41,8 @@ object Common : ModInitializer {
                         .withAsynchronousParsing()
                         .build(),
                 SourceMapper::map, ServerCommand::source)
-        
-        manager.parserRegistry.registerParserSupplier(TypeToken.get(Duration::class.java)) { DurationParser() }
+    
+        manager.parserRegistry().registerParserSupplier(TypeToken.get(Duration::class.java)) { DurationParser() }
         
         // manager.brigadierManager().setNativeNumberSuggestions(false)
         

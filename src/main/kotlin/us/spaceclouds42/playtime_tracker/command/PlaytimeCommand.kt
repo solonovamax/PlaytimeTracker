@@ -16,12 +16,10 @@ import me.basiqueevangelist.nevseti.OfflineDataCache
 import me.basiqueevangelist.nevseti.OfflineNameCache
 import net.kyori.adventure.extra.kotlin.text
 import net.kyori.adventure.identity.Identity
-import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.Util
 import us.spaceclouds42.playtime_tracker.Common
 import us.spaceclouds42.playtime_tracker.ServerCommand
 import us.spaceclouds42.playtime_tracker.duck.AFKPlayer
@@ -142,16 +140,16 @@ class PlaytimeCommand(
         targets: MultiplePlayerSelector,
         @Argument(value = "time")
         time: Duration,
-                   ) {
+                  ) {
         val manager = command.source.server.playerManager
-        
+    
         targets.get().forEach { target ->
             val player = target as AFKPlayer
-            
+        
             player.playtime += time.toMillis()
-            
+        
             (manager as IAccessPlayerManager).invokeSavePlayerData(player as ServerPlayerEntity)
-            
+        
             val text = text {
                 color(NamedTextColor.WHITE)
                 content("Updated ")

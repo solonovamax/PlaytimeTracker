@@ -16,7 +16,7 @@ import us.spaceclouds42.playtime_tracker.duck.AFKPlayer;
 @Mixin(ServerPlayerEntity.class)
 abstract class ServerPlayerEntityMixin implements AFKPlayer {
     @Unique
-    private boolean isAfk = false;
+    private boolean afk = false;
     
     @Unique
     private long playtime = 0L;
@@ -27,45 +27,14 @@ abstract class ServerPlayerEntityMixin implements AFKPlayer {
     @Unique
     private long lastTickTime = 0L;
     
-    @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
-    private void saveData(NbtCompound tag, CallbackInfo ci) {
-        if (((ServerPlayerEntity) (Object) this) instanceof EntityPlayerMPFake) // Skip carpet players
-            return;
-        
-        NbtLong playtimeTag = NbtLong.of(this.playtime);
-        tag.put("Playtime", playtimeTag);
-    }
-    
-    @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
-    private void readData(NbtCompound tag, CallbackInfo ci) {
-        if (((ServerPlayerEntity) (Object) this) instanceof EntityPlayerMPFake) // Skip carpet players
-            return;
-        
-        if (tag.contains("Playtime")) {
-            this.playtime = tag.getLong("Playtime");
-        } else {
-            this.playtime = 0L;
-        }
-    }
-    
-    @Inject(method = "copyFrom", at = @At("TAIL"))
-    private void copyData(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfo ci) {
-        @SuppressWarnings("CastToIncompatibleInterface")
-        AFKPlayer oldAfkPlayer = (AFKPlayer) oldPlayer;
-        
-        this.isAfk = oldAfkPlayer.isAfk();
-        this.playtime = oldAfkPlayer.getPlaytime();
-        this.lastTickTime = oldAfkPlayer.getLastTickTime();
-    }
-    
     @Override
     public boolean isAfk() {
-        return this.isAfk;
+        return this.afk;
     }
     
     @Override
     public void setAfk(boolean isAfk) {
-        this.isAfk = isAfk;
+        this.afk = isAfk;
     }
     
     @Override
@@ -96,5 +65,36 @@ abstract class ServerPlayerEntityMixin implements AFKPlayer {
     @Override
     public void setLastTickTime(long time) {
         lastTickTime = time;
+    }
+    
+    @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
+    private void saveData(NbtCompound tag, CallbackInfo ci) {
+        if (((ServerPlayerEntity) (Object) this) instanceof EntityPlayerMPFake) // Skip carpet players
+            return;
+        
+        NbtLong playtimeTag = NbtLong.of(this.playtime);
+        tag.put("Playtime", playtimeTag);
+    }
+    
+    @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
+    private void readData(NbtCompound tag, CallbackInfo ci) {
+        if (((ServerPlayerEntity) (Object) this) instanceof EntityPlayerMPFake) // Skip carpet players
+            return;
+        
+        if (tag.contains("Playtime")) {
+            this.playtime = tag.getLong("Playtime");
+        } else {
+            this.playtime = 0L;
+        }
+    }
+    
+    @Inject(method = "copyFrom", at = @At("TAIL"))
+    private void copyData(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfo ci) {
+        @SuppressWarnings("CastToIncompatibleInterface")
+        AFKPlayer oldAfkPlayer = (AFKPlayer) oldPlayer;
+        
+        this.afk = oldAfkPlayer.isAfk();
+        this.playtime = oldAfkPlayer.getPlaytime();
+        this.lastTickTime = oldAfkPlayer.getLastTickTime();
     }
 }

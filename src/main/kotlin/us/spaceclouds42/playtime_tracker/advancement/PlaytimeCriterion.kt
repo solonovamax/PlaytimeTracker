@@ -19,20 +19,6 @@ object PlaytimeCriterion : AbstractCriterion<Conditions>() {
     
     val ID = Identifier("playtime_tracker:playtime")
     
-    val END_OF_TIME_ID = Identifier("playtime_tracker:end_of_time")
-    
-    val ANCIENT_ONE_ID = Identifier("playtime_tracker:ancient_one")
-    
-    val TIME_MARCHES_ID = Identifier("playtime_tracker:time_marches")
-    
-    val DEDICATED_ID = Identifier("playtime_tracker:dedicated")
-    
-    val A_NEW_ADVENTURE_ID = Identifier("playtime_tracker:a_new_adventure")
-    
-    val ANTIQUE_ID = Identifier("playtime_tracker:antique")
-    
-    val VETERAN_ID = Identifier("playtime_tracker:veteran")
-    
     @JvmStatic
     fun trigger(player: ServerPlayerEntity) {
         trigger(player) {
