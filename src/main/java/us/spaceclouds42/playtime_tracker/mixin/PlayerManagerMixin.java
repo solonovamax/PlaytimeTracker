@@ -1,6 +1,7 @@
 package us.spaceclouds42.playtime_tracker.mixin;
 
 
+import carpet.patches.EntityPlayerMPFake;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -16,6 +17,10 @@ import us.spaceclouds42.playtime_tracker.duck.AFKPlayer;
 abstract class PlayerManagerMixin {
     @Inject(method = "onPlayerConnect", at = @At("TAIL"))
     private void updateLastActionTime(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci) {
-        ((AFKPlayer) player).setStrictLastActionTime(Util.getMeasuringTimeMs());
+        if (player instanceof EntityPlayerMPFake) // Skip carpet players
+            return;
+        
+        ((AFKPlayer) player).setLastActionTime(Util.getMeasuringTimeMs());
+        ((AFKPlayer) player).setLastTickTime(Util.getMeasuringTimeMs());
     }
 }

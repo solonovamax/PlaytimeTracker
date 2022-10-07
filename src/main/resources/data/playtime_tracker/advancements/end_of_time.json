@@ -1,20 +1,24 @@
 {
-  "display": {
-    "icon": {
-      "item": "minecraft:cracked_stone_bricks",
-      "nbt": "{Enchantments:[{}]}"
+    "display":  {
+        "icon":             {
+            "item": "minecraft:mossy_stone_bricks",
+            "nbt":  "{Enchantments:[{}]}"
+        },
+        "title":            "The End of Time",
+        "description":      "A whole year?!? You truly must have no life!.",
+        "frame":            "challenge",
+        "show_toast":       true,
+        "announce_to_chat": true,
+        "hidden":           true
     },
-    "title": "The End of Time",
-    "description": "With 1000 hours, you truly must have no life.",
-    "frame": "challenge",
-    "show_toast": true,
-    "announce_to_chat": true,
-    "hidden": true
-  },
-  "parent": "playtime_tracker:ancient_one",
-  "criteria": {
-    "thousand_hours": {
-      "trigger": "playtime_tracker:playtime"
+    "parent":   "playtime_tracker:antique",
+    "criteria": {
+        "play_one_year": {
+            "trigger":    "playtime_tracker:playtime",
+            "conditions": {
+                "time": 365,
+                "unit": "DAYS"
+            }
+        }
     }
-  }
 }

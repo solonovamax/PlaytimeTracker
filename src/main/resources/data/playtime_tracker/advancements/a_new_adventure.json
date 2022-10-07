@@ -1,0 +1,22 @@
+{
+    "display":  {
+        "icon":             {
+            "item": "minecraft:stick"
+        },
+        "title":            "A New Adventure Awaits",
+        "description":      "The start of a new adventure!",
+        "show_toast":       true,
+        "announce_to_chat": true,
+        "hidden":           false
+    },
+    "parent":   "playtime_tracker:root",
+    "criteria": {
+        "ten_minutes": {
+            "trigger":    "playtime_tracker:playtime",
+            "conditions": {
+                "time": 10,
+                "unit": "MINUTES"
+            }
+        }
+    }
+}

@@ -1,21 +1,21 @@
 {
     "display":  {
         "icon":             {
-            "item": "minecraft:emerald_block"
+            "item": "minecraft:weathered_copper"
         },
-        "title":            "The Ancient One",
-        "description":      "500 hours? Where are you getting all this free time!",
+        "title":            "Antique",
+        "description":      "You truly are an antique, with 1000 hours to your name.",
         "frame":            "goal",
         "show_toast":       true,
         "announce_to_chat": true,
         "hidden":           true
     },
-    "parent":   "playtime_tracker:veteran",
+    "parent":   "playtime_tracker:ancient_one",
     "criteria": {
-        "play_five_hundred_hours": {
+        "play_one_thousand_hours": {
             "trigger":    "playtime_tracker:playtime",
             "conditions": {
-                "time": 500,
+                "time": 1000,
                 "unit": "HOURS"
             }
         }

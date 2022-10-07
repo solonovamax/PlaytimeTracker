@@ -1,0 +1,15 @@
+{
+    "required":           true,
+    "package":            "me.basiqueevangelist.nevseti.mixin",
+    "compatibilityLevel": "JAVA_17",
+    "mixins":             [
+        "AdvancementProgressAccessor",
+        "CriterionProgressAccessor",
+        "PlayerAdvancementTrackerMixin",
+        "ServerPlayerEntityMixin",
+        "WorldSaveHandlerMixin"
+    ],
+    "injectors":          {
+        "defaultRequire": 1
+    }
+}

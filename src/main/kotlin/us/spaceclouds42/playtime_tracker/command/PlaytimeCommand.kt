@@ -1,638 +1,453 @@
 package us.spaceclouds42.playtime_tracker.command
 
-import com.github.p03w.aegis.aegisCommand
-import com.mojang.authlib.GameProfile
-import com.mojang.brigadier.arguments.BoolArgumentType
-import com.mojang.brigadier.arguments.IntegerArgumentType
-import com.mojang.brigadier.arguments.StringArgumentType
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import cloud.commandframework.annotations.Argument
+import cloud.commandframework.annotations.CommandDescription
+import cloud.commandframework.annotations.CommandMethod
+import cloud.commandframework.annotations.CommandPermission
+import cloud.commandframework.annotations.Flag
+import cloud.commandframework.annotations.specifier.Greedy
+import cloud.commandframework.annotations.suggestions.Suggestions
+import cloud.commandframework.context.CommandContext
+import cloud.commandframework.fabric.data.MultiplePlayerSelector
+import cloud.commandframework.minecraft.extras.MinecraftHelp
+import me.basiqueevangelist.nevseti.OfflineAdvancementCache.INSTANCE
 import me.basiqueevangelist.nevseti.OfflineAdvancementUtils
 import me.basiqueevangelist.nevseti.OfflineDataCache
 import me.basiqueevangelist.nevseti.OfflineNameCache
-import net.minecraft.command.argument.GameProfileArgumentType
+import net.kyori.adventure.extra.kotlin.text
+import net.kyori.adventure.identity.Identity
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
+import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket
+import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket.Action.UPDATE_DISPLAY_NAME
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.LiteralText
-import net.minecraft.util.Identifier
-import us.spaceclouds42.ekho.EkhoBuilder
-import us.spaceclouds42.ekho.ekho
-import us.spaceclouds42.playtime_tracker.Context
-import us.spaceclouds42.playtime_tracker.Node
+import net.minecraft.util.Util
+import us.spaceclouds42.playtime_tracker.Common
+import us.spaceclouds42.playtime_tracker.ServerCommand
 import us.spaceclouds42.playtime_tracker.duck.AFKPlayer
 import us.spaceclouds42.playtime_tracker.extension.prettyPrint
-import us.spaceclouds42.playtime_tracker.extension.toPlayer
-import us.spaceclouds42.playtime_tracker.extension.toTime
 import us.spaceclouds42.playtime_tracker.mixin.access.IAccessPlayerManager
-import us.spaceclouds42.playtime_tracker.util.AdvancementHelper
+import us.spaceclouds42.playtime_tracker.util.revokeAdvancements
+import java.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.DurationUnit.MILLISECONDS
+import kotlin.time.toDuration
 
-class PlaytimeCommand {
-    @OptIn(DelicateCoroutinesApi::class)
-    fun register(): Node {
-        return aegisCommand("playtime") {
-            requires {
-                it.hasPermissionLevel(2)
-            }
-            
-            literal("help") {
-                executes {
-                    helpCommand(it, null)
-                }
-                
-                literal("alltime") {
-                    executes {
-                        helpCommand(it, null, temp = false)
-                    }
-                    
-                    literal("player") {
-                        executes {
-                            helpCommand(it, "player")
-                        }
-                    }
-                    
-                    literal("top") {
-                        executes {
-                            helpCommand(it, "top")
-                        }
-                    }
-                    
-                    literal("reset") {
-                        executes {
-                            helpCommand(it, "reset")
-                        }
-                    }
-                }
-                
-                literal("temp") {
-                    executes {
-                        helpCommand(it, null, temp = true)
-                    }
-                    
-                    literal("player") {
-                        executes {
-                            helpCommand(it, "player", temp = true)
-                        }
-                    }
-                    
-                    literal("top") {
-                        executes {
-                            helpCommand(it, "top", temp = true)
-                        }
-                    }
-                    
-                    literal("reset") {
-                        executes {
-                            helpCommand(it, "reset", temp = true)
-                        }
-                    }
-                }
-            }
-            
-            literal("alltime") {
-                literal("player") {
-                    gameProfile("targets") {
-                        executes {
-                            getTimeCommand(it, GameProfileArgumentType.getProfileArgument(it, "targets").iterator())
-                        }
-                        
-                        literal("set") {
-                            greedyString("time") {
-                                executes {
-                                    setTimeCommand(
-                                            it,
-                                            GameProfileArgumentType.getProfileArgument(it, "targets").iterator(),
-                                            StringArgumentType.getString(it, "time").toTime(),
-                                                  )
-                                }
-                            }
-                        }
-                        
-                        literal("add") {
-                            greedyString("time") {
-                                executes {
-                                    addTimeCommand(
-                                            it,
-                                            GameProfileArgumentType.getProfileArgument(it, "targets").iterator(),
-                                            StringArgumentType.getString(it, "time").toTime(),
-                                                  )
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                literal("top") {
-                    executes {
-                        topCommand(it)
-                    }
-                    
-                    integer("count", min = 1) {
-                        executes {
-                            topCommand(it, IntegerArgumentType.getInteger(it, "count"))
-                        }
-                    }
-                }
-                
-                literal("reset") {
-                    executes {
-                        GlobalScope.launch {
-                            resetCommand(it)
-                        }
-                    }
-                    
-                    bool("confirm") {
-                        requires {
-                            it.hasPermissionLevel(4)
-                        }
-                        
-                        executes {
-                            GlobalScope.launch {
-                                resetCommand(it, BoolArgumentType.getBool(it, "confirm"))
-                            }
-                        }
-                        
-                        literal("revoke") {
-                            executes {
-                                GlobalScope.launch {
-                                    resetCommand(it, BoolArgumentType.getBool(it, "confirm"), true)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            literal("temp") {
-                literal("player") {
-                    gameProfile("targets") {
-                        executes {
-                            getTimeCommand(it, GameProfileArgumentType.getProfileArgument(it, "targets").iterator(), temp = true)
-                        }
-                        
-                        literal("set") {
-                            greedyString("time") {
-                                executes {
-                                    setTimeCommand(
-                                            it,
-                                            GameProfileArgumentType.getProfileArgument(it, "targets").iterator(),
-                                            StringArgumentType.getString(it, "time").toTime(),
-                                            temp = true,
-                                                  )
-                                }
-                            }
-                        }
-                        
-                        literal("add") {
-                            greedyString("time") {
-                                executes {
-                                    addTimeCommand(
-                                            it,
-                                            GameProfileArgumentType.getProfileArgument(it, "targets").iterator(),
-                                            StringArgumentType.getString(it, "time").toTime(),
-                                            temp = true,
-                                                  )
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                literal("top") {
-                    executes {
-                        topCommand(it, temp = true)
-                    }
-                    
-                    integer("count", min = 1) {
-                        executes {
-                            topCommand(it, IntegerArgumentType.getInteger(it, "count"), temp = true)
-                        }
-                    }
-                }
-                
-                literal("reset") {
-                    executes {
-                        GlobalScope.launch {
-                            resetCommand(it, temp = true)
-                        }
-                    }
-                    
-                    bool("confirm") {
-                        requires {
-                            it.hasPermissionLevel(4)
-                        }
-                        
-                        executes {
-                            GlobalScope.launch {
-                                resetCommand(it, confirm = BoolArgumentType.getBool(it, "confirm"), temp = true)
-                            }
-                        }
-                    }
-                }
-            }
-        }.build()
-    }
+class PlaytimeCommand(
+    val help: MinecraftHelp<ServerCommand>
+                     ) {
     
-    private fun helpCommand(context: Context, command: String?, temp: Boolean = false) {
-        val tempArg = if (temp) {
-            "temp"
-        } else {
-            "alltime"
-        }
-        val text = when (command) {
-            "player" -> {
-                ekho {
-                    playtimeHelpPrefix()
-                    
-                    " Command: " {
-                        style { darkAqua }
-                    }
-                    "/playtime $tempArg player <targets> [(add|set)] [<time>]" {
-                        style { gray }
-                    }
-                    
-                    newLine
-                    newLine
-                    " Parameters: " {
-                        style { darkAqua }
-                    }
-                    
-                    newLine
-                    "  targets" {
-                        style { green; bold }
-                        " - "(false) {
-                            style { gray }
-                        }
-                        "required, specifies the player(s) to run the command on" {
-                            style { noBold }
-                        }
-                    }
-                    
-                    newLine
-                    "  add" {
-                        style { darkGreen; bold }
-                        " - "(false) {
-                            style { gray }
-                        }
-                        "optional, will add the input time to the playtime of the targets" {
-                            style { noBold }
-                        }
-                    }
-                    
-                    newLine
-                    "  set" {
-                        style { green; bold }
-                        " - "(false) {
-                            style { gray }
-                        }
-                        "optional, will set the playtime of the targets to the input time" {
-                            style { noBold }
-                        }
-                    }
-                    
-                    newLine
-                    "  time" {
-                        style { darkGreen; bold }
-                        " - "(false) {
-                            style { gray }
-                        }
-                        "required, if using add/set. format: \"7d 2m 4s\"" {
-                            style { noBold }
-                        }
-                    }
-                    
-                    newLine
-                    "  if no parameter is use after targets, it will get the targets' playtime" {
-                        style { green }
-                    }
-                }
-            }
-            
-            "top"    -> {
-                ekho {
-                    playtimeHelpPrefix()
-                    
-                    " Command: " {
-                        style { darkAqua }
-                    }
-                    "/playtime $tempArg top [<count>]" {
-                        style { gray }
-                    }
-                    
-                    newLine
-                    newLine
-                    " Parameters: " {
-                        style { darkAqua }
-                    }
-                    
-                    newLine
-                    "  count" {
-                        style { green; bold }
-                        " - "(false) {
-                            style { gray }
-                        }
-                        "specifies how many players should be listed, default=3" {
-                            style { noBold }
-                        }
-                    }
-                }
-            }
-            
-            "reset"  -> {
-                ekho {
-                    playtimeHelpPrefix()
-                    
-                    " Command: " {
-                        style { darkAqua }
-                    }
-                    "/playtime $tempArg reset [<confirm>] [revoke]" {
-                        style { gray }
-                    }
-                    
-                    newLine
-                    newLine
-                    " Parameters: " {
-                        style { darkAqua }
-                    }
-                    
-                    newLine
-                    "  confirm" {
-                        style { green; bold }
-                        " - "(false) {
-                            style { gray }
-                        }
-                        "must be 'true' for playtimes to be reset, because " {
-                            style { noBold }
-                            "all" {
-                                style { bold }
-                            }
-                            " playtime will be reset"()
-                        }
-                    }
-                    
-                    newLine
-                    "  revoke" {
-                        style { darkGreen; bold }
-                        " - "(false) {
-                            style { gray }
-                        }
-                        "optional, when revoke param is used, all playtime advancements will be revoked as well"()
-                    }
-                    
-                    newLine
-                    "Note that when resetting temp times, advancements cannot be revoked" { style { green; italics } }
-                }
-            }
-            
-            else     -> {
-                ekho {
-                    playtimeHelpPrefix()
-                    
-                    "Welcome to the help menu! For more info about specific commands, click below." {
-                        style { darkAqua }
-                        newLine
-                        "All commands have 2 versions, one for alltime and one for temp." { style { italics } }
-                    }
-                    
-                    newLine
-                    "player (get/set/add playtime)" {
-                        style {
-                            green
-                            clickEvent {
-                                runCommand = "/playtime help $tempArg player"
-                            }
-                        }
-                    }
-                    newLine
-                    "top (playtime leaderboard)" {
-                        style {
-                            darkGreen
-                            clickEvent {
-                                runCommand = "/playtime help $tempArg top"
-                            }
-                        }
-                    }
-                    newLine
-                    "reset (reset all playtime)" {
-                        style {
-                            green
-                            clickEvent {
-                                runCommand = "/playtime help $tempArg reset"
-                            }
-                        }
-                    }
-                }
-            }
+    @CommandMethod("afk")
+    @CommandDescription("Mark yourself as afk")
+    fun setAfkCommand(command: ServerCommand) {
+        val player = command.source.player
+        
+        (player as AFKPlayer).isAfk = true
+        
+        player.server.playerManager.sendToAll(PlayerListS2CPacket(UPDATE_DISPLAY_NAME, player))
+        
+        val text = text {
+            content("Player ")
+            append(
+                    player.displayName,
+                    text {
+                        content(" is now afk.")
+                    },
+                  )
+            color(NamedTextColor.GRAY)
         }
         
-        context.source.sendFeedback(text, false)
-    }
-    
-    private fun EkhoBuilder.playtimeHelpPrefix() {
-        style { gold }
-        "["()
-        "PlaytimeTracker" {
-            style { yellow }
-        }
-        "] "()
-        "Help:" {
-            style { darkGreen }
-        }
+        player.server.sendMessage(text)
         
-        newLine
-    }
-    
-    private fun getTimeCommand(context: Context, targets: Iterator<GameProfile>, temp: Boolean = false) {
-        targets.forEach { target ->
-            val player = target.toPlayer(context.source.server.playerManager) as AFKPlayer?
-            if (player != null) {
-                val time = (if (temp) {
-                    player.tempPlaytime
-                } else {
-                    player.playtime
-                }).prettyPrint()
-                context.source.sendFeedback(LiteralText("§9${target.name} §ehas §9$time §eof playtime."), false)
-            } else {
-                val offlineData = OfflineDataCache.INSTANCE.players[target.id]
-                if (offlineData != null && offlineData.contains("Playtime")) {
-                    val playtime = offlineData.getLong(if (temp) {
-                        "TempPlaytime"
-                    } else {
-                        "Playtime"
-                    }).prettyPrint()
-                    
-                    context.source.sendFeedback(LiteralText("§9${target.name} §ehas §9$playtime §eof playtime."), false)
-                } else {
-                    context.source.sendFeedback(LiteralText("§cPlaytime data for §9${target.name} §cnot found!"), false)
-                }
-            }
+        for (serverPlayer in player.server.playerManager.playerList) {
+            serverPlayer.sendMessage(Identity.nil(), text)
         }
     }
     
-    private fun setTimeCommand(context: Context, targets: Iterator<GameProfile>, time: Long, temp: Boolean = false) {
-        val manager = context.source.server.playerManager
-        val tracker = if (temp) {
-            "temp"
-        } else {
-            "all time"
-        }
+    @CommandMethod("playtime set <targets> <time>")
+    @CommandPermission("playtime.modify")
+    fun setPlaytime(
+        command: ServerCommand,
+        @Argument(value = "targets")
+        targets: MultiplePlayerSelector,
+        @Argument(value = "time")
+        time: Duration
+                   ) {
+        val manager = command.source.server.playerManager
         
-        targets.forEach { target ->
-            var requestedPlayer = target.toPlayer(manager)
+        targets.get().forEach { target ->
+            val player = target as AFKPlayer
             
-            if (requestedPlayer == null) {
-                requestedPlayer = manager.createPlayer(target)
-                manager.loadPlayerData(requestedPlayer)
-            }
+            player.playtime = time.toMillis()
             
-            val player = requestedPlayer as AFKPlayer
-            
-            if (temp) {
-                player.tempPlaytime = time
-            } else {
-                player.playtime = time
-            }
             (manager as IAccessPlayerManager).invokeSavePlayerData(player as ServerPlayerEntity)
             
-            context.source.sendFeedback(ekho("§eSet §9${target.name} §eto §9${time.prettyPrint()} §eof playtime. ($tracker)"), true)
+            val text = text {
+                color(NamedTextColor.WHITE)
+                content("Set ")
+                append(
+                        target.name.copy().apply {
+                            color(NamedTextColor.GREEN)
+                        },
+                        text { content(" to ") },
+                        text {
+                            color(NamedTextColor.WHITE)
+                            content(time.prettyPrint())
+                        },
+                        text { content(" of playtime.") }
+                      )
+            }
+            command.sendMessage(text)
         }
     }
     
-    private fun addTimeCommand(context: Context, targets: Iterator<GameProfile>, time: Long, temp: Boolean = false) {
-        val manager = context.source.server.playerManager
-        
-        targets.forEach { target ->
-            val player = target.toPlayer(manager) as AFKPlayer?
+    @CommandMethod("playtime get <targets>")
+    fun getPlaytime(
+        command: ServerCommand,
+        @Argument("targets")
+        targets: MultiplePlayerSelector,
+                   ) {
+        targets.get().forEach { target ->
+            val player = target as AFKPlayer
             
-            // Online Player
-            if (player != null) {
-                setTimeCommand(context, listOf(target).iterator(), if (temp) {
-                    player.tempPlaytime
+            Common.LOGGER.info("player ${target.entityName}: ${player.playtime}")
+            
+            val text = text {
+                content("")
+                append(
+                        target.name.copy().apply {
+                            color(NamedTextColor.GREEN)
+                        },
+                        text {
+                            content(" has ")
+                        },
+                        text {
+                            color(NamedTextColor.WHITE)
+                            content(player.playtime.toDuration(MILLISECONDS).prettyPrint())
+                        },
+                        text {
+                            content(" of playtime")
+                        }
+                      )
+            }
+            command.sendMessage(text)
+        }
+    }
+    
+    @CommandMethod("playtime add <targets> <time>")
+    @CommandPermission("playtime.modify")
+    fun addCommand(
+        command: ServerCommand,
+        @Argument(value = "targets")
+        targets: MultiplePlayerSelector,
+        @Argument(value = "time")
+        time: Duration,
+                   ) {
+        val manager = command.source.server.playerManager
+        
+        targets.get().forEach { target ->
+            val player = target as AFKPlayer
+            
+            player.playtime += time.toMillis()
+            
+            (manager as IAccessPlayerManager).invokeSavePlayerData(player as ServerPlayerEntity)
+            
+            val text = text {
+                color(NamedTextColor.WHITE)
+                content("Updated ")
+                append(
+                        target.name.copy().apply {
+                            color(NamedTextColor.GREEN)
+                        },
+                        text { content(" to ") },
+                        text {
+                            color(NamedTextColor.WHITE)
+                            content(player.playtime.milliseconds.prettyPrint())
+                        },
+                        text { content(" of playtime.") }
+                      )
+            }
+            command.sendMessage(text)
+        }
+    }
+    
+    // @CommandMethod("playtime get [player]")
+    // fun getCommand(
+    //     command: ServerCommand,
+    //     @Argument(value = "player", suggestions = "onlinePlayers")
+    //     player: String? = null
+    //               ) {
+    //     val playerPlaytime = if (player != null) {
+    //         val times = mutableMapOf<String, Long>()
+    //         for ((uuid, tag) in OfflineDataCache.INSTANCE.players) {
+    //             if (uuid == null)
+    //                 continue
+    //
+    //             try {
+    //                 val name = OfflineNameCache.INSTANCE.getNameFromUUID(uuid)
+    //                 val time = if (tag.contains("Playtime")) {
+    //                     tag.getLong("Playtime")
+    //                 } else {
+    //                     null
+    //                 }
+    //
+    //                 if (time != null)
+    //                     times[name] = time
+    //             } catch (_: RuntimeException) {
+    //             } // sometimes OfflineNameCache.INSTANCE.getNameFromUUID does a bruh moment
+    //         }
+    //
+    //         // Use the latest data for any online players
+    //         command.source.server.playerManager.playerList.forEach { player ->
+    //             times[player.entityName] = (player as AFKPlayer).playtime
+    //         }
+    //
+    //         times[player] to player
+    //     } else {
+    //         (command.source.player as AFKPlayer).playtime to command.source.player.entityName
+    //     }
+    //
+    //     val text = if (playerPlaytime.first == null) {
+    //         text {
+    //             content("Player ${playerPlaytime.second} Not Found")
+    //         }
+    //     } else {
+    //         text {
+    //             color(NamedTextColor.GOLD)
+    //             append(
+    //                     text {
+    //                         content("====")
+    //                     },
+    //                     text {
+    //                         color(NamedTextColor.YELLOW)
+    //                         content("<")
+    //                     },
+    //                     text {
+    //                         content("Your Playtime")
+    //                     },
+    //                     text {
+    //                         color(NamedTextColor.YELLOW)
+    //                         content(">")
+    //                     },
+    //                     text {
+    //                         content("====")
+    //                     }
+    //                   )
+    //
+    //             append {
+    //                 text {
+    //                     color(NamedTextColor.WHITE)
+    //                     content("${playerPlaytime.second}: ${playerPlaytime.first!!.toDuration(MILLISECONDS).prettyPrint()}")
+    //                 }
+    //             }
+    //         }
+    //     }
+    //
+    //     command.sendMessage(text)
+    // }
+    
+    @Suggestions("onlinePlayers")
+    fun onlinePlayerSuggestions(sender: CommandContext<ServerCommand>, input: String): List<String> {
+        return sender.sender.source.server.playerNames.asList()
+    }
+    
+    @CommandMethod("playtime top")
+    fun topCommand(
+        command: ServerCommand,
+                  ) {
+        val times = mutableMapOf<String, Long>()
+        for ((uuid, tag) in OfflineDataCache.INSTANCE.players) {
+            if (uuid == null)
+                continue
+            
+            try {
+                val name = OfflineNameCache.INSTANCE.getNameFromUUID(uuid)
+                val time = if (tag.contains("Playtime")) {
+                    tag.getLong("Playtime")
                 } else {
-                    player.playtime
-                } + time)
-            } else {
+                    null
+                }
                 
-                // Offline Player
-                val offlineData = OfflineDataCache.INSTANCE.players[target.id]
-                if (offlineData != null && offlineData.contains("Playtime")) {
-                    setTimeCommand(context, listOf(target).iterator(), offlineData.getLong(if (temp) {
-                        "TempPlaytime"
-                    } else {
-                        "Playtime"
-                    }) + time)
-                    
-                    // Player not found
-                } else {
-                    setTimeCommand(context, listOf(target).iterator(), time)
+                if (time != null)
+                    times[name] = time
+            } catch (_: RuntimeException) {
+            } // sometimes OfflineNameCache.INSTANCE.getNameFromUUID does a bruh moment
+        }
+        
+        // Use the latest data for any online players
+        command.source.server.playerManager.playerList.forEach { player ->
+            times[player.entityName] = (player as AFKPlayer).playtime
+        }
+        
+        val text = text {
+            color(NamedTextColor.GOLD)
+            append(
+                    text {
+                        content("====")
+                    },
+                    text {
+                        color(NamedTextColor.YELLOW)
+                        content("<")
+                    },
+                    text {
+                        content("Leaderboard")
+                    },
+                    text {
+                        color(NamedTextColor.YELLOW)
+                        content(">")
+                    },
+                    text {
+                        content("====")
+                    }
+                  )
+            
+            times.asSequence().filter { it.value != 0L }.sortedByDescending { (_, value) -> value }.take(10)
+                    .forEachIndexed { index, entry ->
+                        val n = index + 1
+                        if (n % 2 == 1)
+                            append {
+                                text {
+                                    color(NamedTextColor.WHITE)
+                                    content("\n$n. ${entry.key}: ${entry.value.toDuration(MILLISECONDS).prettyPrint()}")
+                                }
+                            }
+                        else
+                            append {
+                                text {
+                                    color(NamedTextColor.GRAY)
+                                    content("\n$n. ${entry.key}: ${entry.value.toDuration(MILLISECONDS).prettyPrint()}")
+                                }
+                            }
+                        // source.sendFeedback(LiteralText("§2$n. §3${entry.first}: ${entry.second!!.prettyPrint()}"), false)
+                    }
+        }
+        
+        command.sendMessage(text)
+    }
+    
+    @CommandMethod("playtime revoke")
+    @CommandPermission("playtime.modify")
+    fun revokeCommand(
+        command: ServerCommand,
+        @Flag("confirm", aliases = ["c"])
+        confirm: Boolean = false,
+                     ) {
+        val server = command.source.server
+        
+        if (confirm) {
+            OfflineDataCache.INSTANCE.players.forEach { (uuid, _) ->
+                val map = OfflineAdvancementUtils.copyAdvancementMap(INSTANCE[uuid])
+                
+                for ((_, playtimeAdvancement) in map.filter { it.key.namespace == "playtime_tracker" }) {
+                    for (criterion in playtimeAdvancement.obtainedCriteria) {
+                        playtimeAdvancement.reset(criterion)
+                    }
+                }
+                
+                INSTANCE.save(uuid, map)
+            }
+            
+            server.playerManager.playerList.forEach { player ->
+                player as AFKPlayer
+                
+                val playtimeAdvancements = server.advancementLoader.advancements.filter { it.id.namespace == "playtime_tracker" }
+                
+                player.revokeAdvancements(playtimeAdvancements)
+            }
+            
+            command.sendMessage {
+                text {
+                    color(NamedTextColor.GREEN)
+                    content("Revoked all advancements")
+                }
+            }
+        } else {
+            command.sendMessage {
+                text {
+                    color(NamedTextColor.WHITE)
+                    content("Are you sure you want to revoke all advancements? This action is not reversible! If you are certain you wish to proceed, run: ")
+                    append(text {
+                        content("/playtime revoke --confirm")
+                        color(NamedTextColor.GRAY)
+                    })
                 }
             }
         }
     }
     
-    private fun topCommand(context: Context, count: Int = 3, temp: Boolean = false) {
-        val source = context.source
+    @CommandMethod("playtime reset")
+    @CommandPermission("playtime.modify")
+    fun resetCommand(
+        command: ServerCommand,
+        @Flag("confirm", aliases = ["c"])
+        confirm: Boolean = false,
+        @Flag("revoke", aliases = ["r"])
+        revoke: Boolean = false,
+                    ) {
+        val server = command.source.server
         
-        source.sendFeedback(LiteralText("§2====< §aLeaderboard §2>===="), false)
-        
-        val times = mutableMapOf<String, Long?>()
-        OfflineDataCache.INSTANCE.players.forEach { (uuid, tag) ->
-            val name = OfflineNameCache.INSTANCE.getNameFromUUID(uuid)
-            val time = if (tag.contains("Playtime")) {
-                tag.getLong(if (temp) {
-                    "TempPlaytime"
-                } else {
-                    "Playtime"
-                })
-            } else {
-                null
-            }
-            times[name] = time
-        }
-        
-        // Use latest data for any online players
-        context.source.server.playerManager.playerList.forEach { player ->
-            times[player.entityName] = if (temp) {
-                (player as AFKPlayer).tempPlaytime
-            } else {
-                (player as AFKPlayer).playtime
-            }
-        }
-        
-        times.toList().sortedBy { (_, value) -> value }.asReversed().forEachIndexed { index, entry ->
-            val n = index + 1
-            if (n % 2 == 0)
-                source.sendFeedback(LiteralText("§a$n. §b${entry.first}: ${entry.second!!.prettyPrint()}"), false)
-            else
-                source.sendFeedback(LiteralText("§2$n. §3${entry.first}: ${entry.second!!.prettyPrint()}"), false)
-            
-            if (n == count)
-                return
-            
-        }
-    }
-    
-    private fun resetCommand(context: Context, confirm: Boolean = false, revoke: Boolean = false, temp: Boolean = false) {
         if (confirm) {
             OfflineDataCache.INSTANCE.players.forEach { (uuid, immutableTag) ->
                 val tag = immutableTag.copy()
-                if (!temp) {
-                    if (tag.contains("Playtime")) {
-                        tag.putLong("Playtime", 0L)
-                        OfflineDataCache.INSTANCE.save(uuid, tag)
-                    }
+                if (tag.contains("Playtime")) {
+                    tag.putLong("Playtime", 0L)
+                    // OfflineDataCache.INSTANCE.save(uuid, tag)
                 }
-                if (tag.contains("TempPlaytime")) {
-                    tag.putLong("TempPlaytime", 0L)
-                    OfflineDataCache.INSTANCE.save(uuid, tag)
-                }
+                
                 if (revoke) {
-                    val advancementLoader = context.source.server.advancementLoader
+                    val map = OfflineAdvancementUtils.copyAdvancementMap(INSTANCE[uuid])
                     
-                    OfflineAdvancementUtils.revoke(uuid, advancementLoader[Identifier("playtime_tracker:end_of_time")])
-                    OfflineAdvancementUtils.revoke(uuid, advancementLoader[Identifier("playtime_tracker:ancient_one")])
-                    OfflineAdvancementUtils.revoke(uuid, advancementLoader[Identifier("playtime_tracker:time_marches")])
-                    OfflineAdvancementUtils.revoke(uuid, advancementLoader[Identifier("playtime_tracker:dedicated")])
+                    for ((_, playtimeAdvancement) in map.filter { it.key.namespace == "playtime_tracker" }) {
+                        for (criterion in playtimeAdvancement.obtainedCriteria) {
+                            playtimeAdvancement.reset(criterion)
+                        }
+                    }
+                    
+                    INSTANCE.save(uuid, map)
                 }
             }
             
-            context.source.server.playerManager.playerList.forEach { player ->
-                if (!temp) {
-                    (player as AFKPlayer).playtime = 0L
-                }
-                (player as AFKPlayer).tempPlaytime = 0L
+            server.playerManager.playerList.forEach { player ->
+                player as AFKPlayer
+                
+                player.playtime = 0L
+                
+                val playtimeAdvancements = server.advancementLoader.advancements.filter { it.id.namespace == "playtime_tracker" }
+                
                 if (revoke) {
-                    AdvancementHelper.revoke(player, "playtime_tracker:end_of_time")
-                    AdvancementHelper.revoke(player, "playtime_tracker:ancient_one")
-                    AdvancementHelper.revoke(player, "playtime_tracker:time_marches")
-                    AdvancementHelper.revoke(player, "playtime_tracker:dedicated")
+                    player.revokeAdvancements(playtimeAdvancements)
+                    
                 }
             }
             
-            if (temp) {
-                context.source.sendFeedback(ekho("Reset all temp playtimes") { style { green } }, true)
-            } else {
-                context.source.sendFeedback(ekho("Reset all playtimes") { style { green } }, true)
+            command.sendMessage {
+                text {
+                    color(NamedTextColor.GREEN)
+                    content("Reset all playtimes")
+                }
             }
         } else {
-            if (temp) {
-                context.source.sendError(ekho {
-                    "Are you sure you want to reset all temp playtimes? This action is not reversible! If you are certain you wish to proceed, run:" {
-                        style { gold }
-                    }
-                    "/playtime temp reset true" {
-                        style { gray }
-                    }
-                })
-            } else {
-                context.source.sendError(ekho {
-                    "Are you sure you want to reset all playtimes? This action is not reversible! If you are certain you wish to proceed, run:" {
-                        style { gold }
-                    }
-                    "/playtime alltime reset true" {
-                        style { gray }
-                    }
-                })
+            command.sendMessage {
+                text {
+                    color(NamedTextColor.WHITE)
+                    content("Are you sure you want to reset all playtimes? This action is not reversible! If you are certain you wish to proceed, run: ")
+                    append(text {
+                        content("/playtime reset --confirm")
+                        color(NamedTextColor.GRAY)
+                    })
+                }
             }
         }
+    }
+    
+    @CommandMethod("playtime help [query]")
+    @CommandDescription("Help menu")
+    fun helpCommand(
+        command: ServerCommand,
+        @Greedy
+        @Argument("query")
+        query: String? = null,
+                   ) {
+        help.queryCommands(query ?: "", command)
     }
 }

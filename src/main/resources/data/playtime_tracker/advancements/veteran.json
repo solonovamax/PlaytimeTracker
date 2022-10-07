@@ -1,20 +1,20 @@
 {
     "display":  {
         "icon":             {
-            "item": "minecraft:iron_ore"
+            "item": "minecraft:diamond"
         },
-        "title":            "Dedicated Player",
-        "description":      "Show a true dedication to the craft, by playing for 50 hours.",
+        "title":            "Veteran",
+        "description":      "250 hours makes you a true veteran.",
         "show_toast":       true,
         "announce_to_chat": true,
         "hidden":           false
     },
-    "parent":   "playtime_tracker:a_new_adventure",
+    "parent":   "playtime_tracker:time_marches",
     "criteria": {
-        "play_fifty_hours": {
+        "play_two_hundred_fifty_hours": {
             "trigger":    "playtime_tracker:playtime",
             "conditions": {
-                "time": 50,
+                "time": 250,
                 "unit": "HOURS"
             }
         }

@@ -1,0 +1,18 @@
+{
+    "display":  {
+        "icon":             {
+            "item": "minecraft:barrier"
+        },
+        "title":            "AFK?!?",
+        "description":      "Go afk for five minutes",
+        "show_toast":       true,
+        "announce_to_chat": true,
+        "hidden":           false
+    },
+    "parent":   "playtime_tracker:root",
+    "criteria": {
+        "afk_five_minutes": {
+            "trigger": "playtime_tracker:afk"
+        }
+    }
+}

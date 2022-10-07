@@ -1,6 +1,7 @@
 package us.spaceclouds42.playtime_tracker.mixin;
 
 
+import carpet.patches.EntityPlayerMPFake;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtLong;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -21,37 +22,40 @@ abstract class ServerPlayerEntityMixin implements AFKPlayer {
     private long playtime = 0L;
     
     @Unique
-    private long tempPlaytime = 0L;
+    private long lastActionTime = 0L;
     
     @Unique
-    private long strictLastActionTime = 0L;
+    private long lastTickTime = 0L;
     
     @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
     private void saveData(NbtCompound tag, CallbackInfo ci) {
+        if (((ServerPlayerEntity) (Object) this) instanceof EntityPlayerMPFake) // Skip carpet players
+            return;
+        
         NbtLong playtimeTag = NbtLong.of(this.playtime);
         tag.put("Playtime", playtimeTag);
-        
-        NbtLong tempPlaytimeTag = NbtLong.of(this.tempPlaytime);
-        tag.put("TempPlaytime", tempPlaytimeTag);
     }
     
-    @Inject(method = "readCustomDataFromNbt", at = @At("TAIL")
-    )
+    @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
     private void readData(NbtCompound tag, CallbackInfo ci) {
+        if (((ServerPlayerEntity) (Object) this) instanceof EntityPlayerMPFake) // Skip carpet players
+            return;
+        
         if (tag.contains("Playtime")) {
             this.playtime = tag.getLong("Playtime");
-        }
-        
-        if (tag.contains("TempPlaytime")) {
-            this.tempPlaytime = tag.getLong("TempPlaytime");
+        } else {
+            this.playtime = 0L;
         }
     }
     
     @Inject(method = "copyFrom", at = @At("TAIL"))
     private void copyData(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfo ci) {
-        this.isAfk = ((AFKPlayer) oldPlayer).isAfk();
-        this.playtime = ((AFKPlayer) oldPlayer).getPlaytime();
-        this.tempPlaytime = ((AFKPlayer) oldPlayer).getTempPlaytime();
+        @SuppressWarnings("CastToIncompatibleInterface")
+        AFKPlayer oldAfkPlayer = (AFKPlayer) oldPlayer;
+        
+        this.isAfk = oldAfkPlayer.isAfk();
+        this.playtime = oldAfkPlayer.getPlaytime();
+        this.lastTickTime = oldAfkPlayer.getLastTickTime();
     }
     
     @Override
@@ -75,22 +79,22 @@ abstract class ServerPlayerEntityMixin implements AFKPlayer {
     }
     
     @Override
-    public long getTempPlaytime() {
-        return this.tempPlaytime;
+    public long getLastActionTime() {
+        return this.lastActionTime;
     }
     
     @Override
-    public void setTempPlaytime(long playtime) {
-        this.tempPlaytime = playtime;
+    public void setLastActionTime(long playtime) {
+        this.lastActionTime = playtime;
     }
     
     @Override
-    public long getStrictLastActionTime() {
-        return this.strictLastActionTime;
+    public long getLastTickTime() {
+        return lastTickTime;
     }
     
     @Override
-    public void setStrictLastActionTime(long playtime) {
-        this.strictLastActionTime = playtime;
+    public void setLastTickTime(long time) {
+        lastTickTime = time;
     }
 }
